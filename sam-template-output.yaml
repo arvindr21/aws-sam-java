@@ -1,0 +1,127 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: "Simple implementation of a REST API for an imaginary todo app.\n"
+Globals:
+  Function:
+    Runtime: java8
+    Timeout: 60
+    MemorySize: 256
+Parameters:
+  StageName:
+    Type: String
+    Default: dev
+    Description: The Lambda Function Stage
+Resources:
+  RestApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name:
+        Fn::Sub: todo-app-api-${StageName}
+      StageName:
+        Ref: StageName
+  ListTasksFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: todo-app-list-tasks-${StageName}
+      CodeUri: s3://todo-app-java-tasks-poc/1f2366be51ce7808fa9ea9e295e97919
+      Handler: com.todo.app.handler.TaskRequestHandler::listTasks
+      Policies:
+        DynamoDBReadPolicy:
+          TableName:
+            Ref: TasksTable
+      Events:
+        List:
+          Type: Api
+          Properties:
+            Path: /tasks
+            Method: GET
+            RestApiId:
+              Ref: RestApi
+  CreateTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: todo-app-create-task-${StageName}
+      CodeUri: s3://todo-app-java-tasks-poc/1f2366be51ce7808fa9ea9e295e97919
+      Handler: com.todo.app.handler.TaskRequestHandler::createTask
+      Policies:
+        DynamoDBCrudPolicy:
+          TableName:
+            Ref: TasksTable
+      Events:
+        List:
+          Type: Api
+          Properties:
+            Path: /tasks
+            Method: POST
+            RestApiId:
+              Ref: RestApi
+  GetTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: todo-app-get-task-${StageName}
+      CodeUri: s3://todo-app-java-tasks-poc/1f2366be51ce7808fa9ea9e295e97919
+      Handler: com.todo.app.handler.TaskRequestHandler::getTask
+      Policies:
+        DynamoDBReadPolicy:
+          TableName:
+            Ref: TasksTable
+      Events:
+        List:
+          Type: Api
+          Properties:
+            Path: /tasks/{id}
+            Method: GET
+            RestApiId:
+              Ref: RestApi
+  UpdateTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: todo-app-update-task-${StageName}
+      CodeUri: s3://todo-app-java-tasks-poc/1f2366be51ce7808fa9ea9e295e97919
+      Handler: com.todo.app.handler.TaskRequestHandler::updateTask
+      Policies:
+        DynamoDBCrudPolicy:
+          TableName:
+            Ref: TasksTable
+      Events:
+        List:
+          Type: Api
+          Properties:
+            Path: /tasks/{id}
+            Method: PUT
+            RestApiId:
+              Ref: RestApi
+  DeleteTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName:
+        Fn::Sub: todo-app-delete-task-${StageName}
+      CodeUri: s3://todo-app-java-tasks-poc/1f2366be51ce7808fa9ea9e295e97919
+      Handler: com.todo.app.handler.TaskRequestHandler::deleteTask
+      Policies:
+        DynamoDBCrudPolicy:
+          TableName:
+            Ref: TasksTable
+      Events:
+        List:
+          Type: Api
+          Properties:
+            Path: /tasks/{id}
+            Method: DELETE
+            RestApiId:
+              Ref: RestApi
+  TasksTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      TableName:
+        Fn::Sub: todo-app-tasks
+      PrimaryKey:
+        Name: id
+        Type: String
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
